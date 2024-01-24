@@ -9,20 +9,42 @@ message User {
     string name = 2;
 }
 
+message UserRegister {
+    string id = 1;
+    string name = 2;
+    string password = 3;
+}
+
 message UserList {
     repeated User list = 1;
 }
 
-message UserResponse {
-    string status = 1;
-    string id = 2;
-    string name = 3;
+message UserLogin {
+    string name = 1;
+    string password = 2;
+}
+
+message UserUpdate {
+    string id = 1;
+    string name = 2;
+    string newid = 3;
+}
+
+message ID {
+    string id = 1;
+}
+
+message JWT {
+    string token = 1;
 }
 
 message Empty{}
 
-
 service UserService {
     rpc getUserList(Empty) returns (UserList) {}
-    rpc AddUser(User) returns (UserResponse) {}
+    rpc createUser(UserRegister) returns (User) {}
+    rpc getUserByID(ID) returns (User) {}
+    rpc deleteUser(ID) returns (Empty) {}
+    rpc updateUser(UserUpdate) returns (User) {}
+    rpc verifyUserCredentials (UserLogin) returns (JWT) {}
 }

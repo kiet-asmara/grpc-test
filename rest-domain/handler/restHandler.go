@@ -20,26 +20,57 @@ func NewHandler(grpc model.UserServiceClient) *Handler {
 
 func (h *Handler) CreateUser(c echo.Context) error {
 	// bind json input
-	var input model.UserModel
+	var input model.UserAll
 	if err := c.Bind(&input); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"message": "invalid request" + err.Error(),
 		})
 	}
 
-	in := model.User{
-		Id:   input.ID,
-		Name: input.Name,
+	in := model.UserRegister{
+		Id:       input.ID,
+		Name:     input.Name,
+		Password: input.Password,
 	}
 
-	response, err := h.Grpc.AddUser(context.Background(), &in)
+	user, err := h.Grpc.CreateUser(context.Background(), &in)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err,
 		})
 	}
 
-	return c.JSON(http.StatusCreated, response)
+	return c.JSON(http.StatusCreated, echo.Map{
+		"Status": "Berhasil",
+		"ID":     user.Id,
+		"Name":   user.Name,
+	})
+}
+
+func (h *Handler) LoginUser(c echo.Context) error {
+	// bind json input
+	var input model.UserNamePass
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "invalid request" + err.Error(),
+		})
+	}
+
+	in := model.UserLogin{
+		Name:     input.Name,
+		Password: input.Password,
+	}
+
+	resp, err := h.Grpc.VerifyUserCredentials(context.Background(), &in)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err,
+		})
+	}
+
+	return c.JSON(http.StatusCreated, echo.Map{
+		"token": resp.Token,
+	})
 }
 
 func (h *Handler) GetUserList(c echo.Context) error {
@@ -59,4 +90,65 @@ func (h *Handler) GetUserList(c echo.Context) error {
 	}
 
 	return c.JSON(200, result)
+}
+
+func (h *Handler) GetUserByID(c echo.Context) error {
+	id := c.Param("id")
+	in := &model.ID{Id: id}
+
+	user, err := h.Grpc.GetUserByID(context.Background(), in)
+	if err != nil {
+		return c.JSON(400, echo.Map{
+			"message": "not found",
+		})
+	}
+
+	return c.JSON(200, model.UserModel{
+		ID:   user.Id,
+		Name: user.Name,
+	})
+}
+
+func (h *Handler) DeleteUser(c echo.Context) error {
+	id := c.Param("id")
+	in := &model.ID{Id: id}
+
+	_, err := h.Grpc.DeleteUser(context.Background(), in)
+	if err != nil {
+		return c.JSON(400, echo.Map{
+			"message": err,
+		})
+	}
+
+	return c.JSON(200, echo.Map{"Status": "Berhasil Menghapus Data"})
+}
+
+func (h *Handler) UpdateUser(c echo.Context) error {
+	oldID := c.Param("id")
+
+	var input model.UserModel
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "invalid request" + err.Error(),
+		})
+	}
+
+	in := model.UserUpdate{
+		Id:    oldID,
+		Name:  input.Name,
+		Newid: input.ID,
+	}
+
+	user, err := h.Grpc.UpdateUser(context.Background(), &in)
+	if err != nil {
+		return c.JSON(500, echo.Map{
+			"message": err,
+		})
+	}
+
+	return c.JSON(200, echo.Map{
+		"Status": "Berhasil Perbarui Data",
+		"ID":     user.Id,
+		"Name":   user.Name,
+	})
 }

@@ -9,10 +9,16 @@ import (
 	repository "ngc-grpc/grpc-domain/repo"
 	"ngc-grpc/model"
 
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	db, err := config.InitDB()
 	if err != nil {
 		log.Println(err)
