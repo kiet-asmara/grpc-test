@@ -27,7 +27,7 @@ type UserServiceClient interface {
 	GetUserByID(ctx context.Context, in *ID, opts ...grpc.CallOption) (*User, error)
 	DeleteUser(ctx context.Context, in *ID, opts ...grpc.CallOption) (*Empty, error)
 	UpdateUser(ctx context.Context, in *UserUpdate, opts ...grpc.CallOption) (*User, error)
-	VerifyUserCredentials(ctx context.Context, in *UserLogin, opts ...grpc.CallOption) (*JWT, error)
+	VerifyUserCredentials(ctx context.Context, in *UserLogin, opts ...grpc.CallOption) (*UserToken, error)
 }
 
 type userServiceClient struct {
@@ -83,8 +83,8 @@ func (c *userServiceClient) UpdateUser(ctx context.Context, in *UserUpdate, opts
 	return out, nil
 }
 
-func (c *userServiceClient) VerifyUserCredentials(ctx context.Context, in *UserLogin, opts ...grpc.CallOption) (*JWT, error) {
-	out := new(JWT)
+func (c *userServiceClient) VerifyUserCredentials(ctx context.Context, in *UserLogin, opts ...grpc.CallOption) (*UserToken, error) {
+	out := new(UserToken)
 	err := c.cc.Invoke(ctx, "/model.UserService/verifyUserCredentials", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ type UserServiceServer interface {
 	GetUserByID(context.Context, *ID) (*User, error)
 	DeleteUser(context.Context, *ID) (*Empty, error)
 	UpdateUser(context.Context, *UserUpdate) (*User, error)
-	VerifyUserCredentials(context.Context, *UserLogin) (*JWT, error)
+	VerifyUserCredentials(context.Context, *UserLogin) (*UserToken, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -124,7 +124,7 @@ func (UnimplementedUserServiceServer) DeleteUser(context.Context, *ID) (*Empty, 
 func (UnimplementedUserServiceServer) UpdateUser(context.Context, *UserUpdate) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
 }
-func (UnimplementedUserServiceServer) VerifyUserCredentials(context.Context, *UserLogin) (*JWT, error) {
+func (UnimplementedUserServiceServer) VerifyUserCredentials(context.Context, *UserLogin) (*UserToken, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VerifyUserCredentials not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}

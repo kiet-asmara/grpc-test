@@ -34,8 +34,10 @@ message ID {
     string id = 1;
 }
 
-message JWT {
-    string token = 1;
+message UserToken {
+    string id = 1;
+    string name = 2;
+    string token = 3;
 }
 
 message Empty{}
@@ -46,5 +48,5 @@ service UserService {
     rpc getUserByID(ID) returns (User) {}
     rpc deleteUser(ID) returns (Empty) {}
     rpc updateUser(UserUpdate) returns (User) {}
-    rpc verifyUserCredentials (UserLogin) returns (JWT) {}
+    rpc verifyUserCredentials (UserLogin) returns (UserToken) {}
 }

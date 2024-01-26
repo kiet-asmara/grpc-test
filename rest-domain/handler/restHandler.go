@@ -3,18 +3,22 @@ package handler
 import (
 	"context"
 	"net/http"
+	"ngc-grpc/helpers"
 	"ngc-grpc/model"
 
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 )
 
 type Handler struct {
-	Grpc model.UserServiceClient
+	Grpc  model.UserServiceClient
+	Cache *redis.Client
 }
 
-func NewHandler(grpc model.UserServiceClient) *Handler {
+func NewHandler(grpc model.UserServiceClient, cache *redis.Client) *Handler {
 	return &Handler{
-		Grpc: grpc,
+		Grpc:  grpc,
+		Cache: cache,
 	}
 }
 
@@ -48,6 +52,8 @@ func (h *Handler) CreateUser(c echo.Context) error {
 }
 
 func (h *Handler) LoginUser(c echo.Context) error {
+	ctx := context.Background()
+
 	// bind json input
 	var input model.UserNamePass
 	if err := c.Bind(&input); err != nil {
@@ -62,6 +68,20 @@ func (h *Handler) LoginUser(c echo.Context) error {
 	}
 
 	resp, err := h.Grpc.VerifyUserCredentials(context.Background(), &in)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err,
+		})
+	}
+
+	// store in redis
+	user := model.UserCache{
+		ID:    resp.Id,
+		Name:  resp.Name,
+		Token: resp.Token,
+	}
+
+	err = helpers.SetUserCache(h.Cache, &user, ctx)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err,
@@ -94,12 +114,37 @@ func (h *Handler) GetUserList(c echo.Context) error {
 
 func (h *Handler) GetUserByID(c echo.Context) error {
 	id := c.Param("id")
+	ctx := context.Background()
+
+	// check cache if user info exists
+	userCache, err := helpers.GetUserCache(h.Cache, id, ctx)
+	if err == nil {
+		return c.JSON(200, model.UserModel{
+			ID:   userCache.ID,
+			Name: userCache.Name,
+		})
+	}
+
 	in := &model.ID{Id: id}
 
 	user, err := h.Grpc.GetUserByID(context.Background(), in)
 	if err != nil {
 		return c.JSON(400, echo.Map{
 			"message": "not found",
+		})
+	}
+
+	// store in redis
+	userStore := model.UserCache{
+		ID:    user.Id,
+		Name:  user.Name,
+		Token: c.Request().Header.Get("Authorization"),
+	}
+
+	err = helpers.SetUserCache(h.Cache, &userStore, ctx)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err,
 		})
 	}
 

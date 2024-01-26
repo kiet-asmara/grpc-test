@@ -47,7 +47,7 @@ func (h *UserHandler) CreateUser(ctx context.Context, in *model.UserRegister) (*
 	return response, nil
 }
 
-func (h *UserHandler) VerifyUserCredentials(ctx context.Context, in *model.UserLogin) (*model.JWT, error) {
+func (h *UserHandler) VerifyUserCredentials(ctx context.Context, in *model.UserLogin) (*model.UserToken, error) {
 	var username = in.Name
 
 	existingUser, err := h.UserRepository.ReadByName(username)
@@ -67,7 +67,9 @@ func (h *UserHandler) VerifyUserCredentials(ctx context.Context, in *model.UserL
 		return nil, err
 	}
 
-	var response = &model.JWT{
+	var response = &model.UserToken{
+		Id:    existingUser.ID,
+		Name:  existingUser.Name,
 		Token: token,
 	}
 

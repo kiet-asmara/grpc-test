@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"ngc-grpc/config"
 	"ngc-grpc/model"
 	"ngc-grpc/rest-domain/handler"
 	"ngc-grpc/rest-domain/middleware"
@@ -21,10 +22,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	cache, err := config.InitCache()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	serviceClient := model.NewUserServiceClient(connection)
 
-	restHandler := handler.NewHandler(serviceClient)
+	restHandler := handler.NewHandler(serviceClient, cache)
 
 	e := echo.New()
 
